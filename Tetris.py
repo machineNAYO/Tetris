@@ -3,11 +3,11 @@ import pygame
 
 WIDTH = 10
 HEIGHT = 20
-# 테트리스는 10*20
+# 테트리스는 10*20d
 # AND 연산의 결과값이 참이라면 충돌한 것임
 # 충돌 시 블럭을 이동시키지 않고 설치 (OR연산)
 # 블럭은 x=4번째 칸에서 생성
-# 21번째 줄에 블럭이 설치되면 게임오버 commit test
+# 21번째 줄에 블럭이 설치되면 게임오버
 
 
 class StageManager:
@@ -88,29 +88,39 @@ TICK = 30
 SCREEN_SIZE = [800, 910]
 
 STAGE_WIDTH = 425
+BLOCK_SIZE = STAGE_WIDTH/10
 STAGE_EDGE = 3
 
 STAGE_X = 30
 STAGE_Y = 30
 
-class GameManager:
+class Canvas:
     def __init__(self):
-
         
-        self.__sm = StageManager()
-        self.__cs = Cursor()
-        self.__tcs = Cursor()
-        
-        self.__dealy = 5
-   
-        pygame.init()
-        self.__clock = pygame.time.Clock()
+        self.__blockcanvas = [[BLACK for row in range(0,WIDTH)] for col in range(0,HEIGHT)]
         self.__screen = pygame.display.set_mode(SCREEN_SIZE)
-        pygame.display.set_caption("TISISTTIS")
-        
         self.__screen.fill(BLACK)
         pygame.draw.rect(self.__screen, WHITE, [STAGE_X - STAGE_EDGE, STAGE_Y - STAGE_EDGE, STAGE_WIDTH + STAGE_EDGE*2, (STAGE_WIDTH + STAGE_EDGE) *2], STAGE_EDGE)
 
+
+class GameManager:
+    def __init__(self):
+
+        pygame.init()
+        
+        self.__stm = StageManager()
+        self.__csr = Cursor()
+        self.__tcsr = Cursor()
+        self.__nva = Canvas()
+        
+        self.__dealy = 5
+   
+        
+        self.__clock = pygame.time.Clock()
+
+        pygame.display.set_caption("TISISTTIS")
+        
+        
         
     def Start(self):
         done = False
