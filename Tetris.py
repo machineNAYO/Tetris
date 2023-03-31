@@ -3,7 +3,7 @@ import pygame
 
 WIDTH = 10
 HEIGHT = 20
-# 테트리스는 10*20d
+# 테트리스는 10*20
 # AND 연산의 결과값이 참이라면 충돌한 것임
 # 충돌 시 블럭을 이동시키지 않고 설치 (OR연산)
 # 블럭은 x=4번째 칸에서 생성
@@ -17,11 +17,15 @@ class StageManager:
         self.__max = self.__wall-1
     
     def CollideCheck(self, block, pos):     # self, blocktype, cursorpos, return True = collided
+        #print(f"{block} and {pos}")
         i = 0
-        for b in block:
+        for b in block:          
             b << pos[0]
+            if pos[1] == i: return True
             if b & self.__stage[pos[1] - i] != 0: return True
             if b >= self.__wall: return True
+            i += 1
+            
         return False
     
     def PopLine(self):
@@ -39,7 +43,8 @@ class StageManager:
             
 
 class Cursor:
-    __BLOCK_TYPE = (  # BLOCK_TYPE[type][0, 1][numofvariations, rotate]
+    
+    __BLOCK_TYPE = (  # BLOCK_TYPE[type][0 = numofvariations , 1 = variationlist][rotatenum]
     (2, ((1, 1, 1, 1) , (0b1111) ) ),    # Straight
     (1, (0b11, 0b11) ),    # Square
     (4, ((0b11, 1, 1), (1, 0b111), (0b10, 0b10, 0b11), (0b111, 0b100) ) ),    # L
@@ -49,18 +54,15 @@ class Cursor:
     (2, ((0b10, 0b11, 1), (0b11, 0b110) ) )   # Flipped N
     )
     
-    __pos = [0, 0]  #[x, y]
+    __pos = [4, 20]  #[x, y]
     __type = 0  # str, squ, L, Lf, T, N, Nf (0~6)
     __rotate = 0
 
-    def GetCursorPos(self):
-        return self.__pos
-    
     def SetType(self, num):
         self.__type = num
         
     def GetBlock(self):
-        return self.__BLOCK_TYPE[self.__type][self.__rotate]
+        return self.__BLOCK_TYPE[self.__type][1][self.__rotate], self.__pos
     
     def RotateBlock(self, dir):     # -1 = left, 1 = right
         if self.__type == 1: return
@@ -69,10 +71,11 @@ class Cursor:
         if(self.__rotate == -1): self.__rotate = self.__BLOCK_TYPE[self.__type][0]
         elif self.__rotate == self.__BLOCK_TYPE[self.__type][0]: self.__rotate = 0
         
-    def MoveBlock(self, dir):   # -1 = left, 0 = down, 1 = right
+    def MoveBlock(self, dir):   # -1 = left, 0 = down, 1 = right, 2 = up
         if dir == 0: self.__pos[1] -= 1
         elif dir == -1: self.__pos[0] -= 1
-        else: self.__pos[0] += 1
+        elif dir == 1: self.__pos[0] += 1
+        else: self.__pos[1] += 1
         
 
 
@@ -110,11 +113,10 @@ class GameManager:
         
         self.__stm = StageManager()
         self.__csr = Cursor()
-        self.__tcsr = Cursor()
         self.__nva = Canvas()
         
-        self.__dealy = 5
-   
+        self.__dealy = 1000    #ms
+        self.__fallMax = 10
         
         self.__clock = pygame.time.Clock()
 
@@ -124,7 +126,8 @@ class GameManager:
         
     def Start(self):
         done = False
-
+        fallcount = 0
+        
         while not done:
             
             self.__clock.tick(TICK)
@@ -132,8 +135,31 @@ class GameManager:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     done = True
-                print(event)      
-   
+                    
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        pass
+                        
+                #print(event)      
+
+            #pygame.time.delay(self.__dealy)
+            #print(time.time())
+            
+            
+            if fallcount == self.__fallMax: 
+                print(f"||{self.__csr.GetBlock()}")
+                fallcount = 0
+                self.__csr.MoveBlock(0)
+                
+                if not self.__stm.CollideCheck(*self.__csr.GetBlock()) == True:
+                    print("FALL!!")
+                else: 
+                    pass
+                    
+            else: fallcount += 1
+                  
+                
+                
             pygame.display.update()
             
             
