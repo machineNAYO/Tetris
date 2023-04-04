@@ -1,5 +1,6 @@
 import time
 import pygame
+import random
 
 WIDTH = 10
 HEIGHT = 20
@@ -69,28 +70,31 @@ class StageManager:
 STARTPOS = (4, 23)
 
 class Cursor:
+    def __init__(self):
     
-    __BLOCK_TYPE = (  # BLOCK_TYPE[type][0 = numofvariations , 1 = variationlist, 2 = color][rotatenum]
-    (2, ((1, 1, 1, 1) , (0b1111) ), RED ),    # Straight
-    (1, (0b11, 0b11), GREEN ),    # Square
-    (4, ((0b11, 1, 1), (1, 0b111), (0b10, 0b10, 0b11), (0b111, 0b100) ), BLUE ),    # L
-    (4, ((0b11, 0b10, 0b10), (0b111, 1), (1, 1, 0b11), (0b100, 0b111) ), PURPLE ),    # Flipped L
-    (4, ((0b10, 0b11, 0b10), (0b111, 0b10), (1, 0b11, 1), (0b10, 0b111) ), YELLOW ),  # T
-    (2, ((0b11, 0b10, 1), (0b110, 0b11) ), AQUA ),  # N
-    (2, ((0b10, 0b11, 1), (0b11, 0b110) ), BROWN )   # Flipped N
-    )
+        self.__BLOCK_TYPE = (  # BLOCK_TYPE[type][0 = numofvariations , 1 = variationlist, 2 = color][rotatenum]
+        (2, ((1, 1, 1, 1) , (0b1111) ), RED ),    # Straight
+        (1, (0b11, 0b11), GREEN ),    # Square
+        (4, ((0b11, 1, 1), (1, 0b111), (0b10, 0b10, 0b11), (0b111, 0b100) ), BLUE ),    # L
+        (4, ((0b11, 0b10, 0b10), (0b111, 1), (1, 1, 0b11), (0b100, 0b111) ), PURPLE ),    # Flipped L
+        (4, ((0b10, 0b11, 0b10), (0b111, 0b10), (1, 0b11, 1), (0b10, 0b111) ), YELLOW ),  # T
+        (2, ((0b11, 0b10, 1), (0b110, 0b11) ), AQUA ),  # N
+        (2, ((0b10, 0b11, 1), (0b11, 0b110) ), BROWN )   # Flipped N
+        )
     
 
-    __pos = [0, 0]
-    __type = 0  # str, squ, L, Lf, T, N, Nf (0~6)
-    __rotate = 0
+        self.__pos = [0, 0]
+        self.__type = 6  # str, squ, L, Lf, T, N, Nf (0~6)
+        self.__rotate = 0
 
     def SetType(self, num):
         self.__type = num
         
     def GetBlock(self):
+        temB =[]
+        
         temB = [0 for s in range (len(self.__BLOCK_TYPE[self.__type][1][self.__rotate]))]
-        i = 0;
+        i = 0
         for b in self.__BLOCK_TYPE[self.__type][1][self.__rotate]:
             temB[i] = b << self.__pos[0]
             i += 1
@@ -116,6 +120,7 @@ class Cursor:
         #print(STARTPOS)
         self.__pos = [STARTPOS[0], STARTPOS[1]]
         self.__rotate = 0
+        self.__type = 1 #random.randrange(0,7)
 
 
 
@@ -153,7 +158,7 @@ class Canvas:
                 if self.__canvas[s][i] != BLACK:
                     pygame.draw.rect(self.__screen, self.__canvas[s][i], [STAGE_X + BLOCK_SIZE * (WIDTH-s-1), STAGE_Y + BLOCK_SIZE * (HEIGHT-i-1), BLOCK_SIZE, BLOCK_SIZE])
 
-
+        pygame.draw.rect(self.__screen, WHITE, [STAGE_X - STAGE_EDGE, STAGE_Y - STAGE_EDGE, STAGE_WIDTH + STAGE_EDGE*2, (STAGE_WIDTH + STAGE_EDGE) *2], STAGE_EDGE)
         pygame.display.update()
         
     def AddBlock(self, block, ty, color):
@@ -184,7 +189,7 @@ class GameManager:
         self.__nva = Canvas()
         
         self.__dealy = 1000    #ms
-        self.__fallMax = 10
+        self.__fallMax = 5
         
         self.__clock = pygame.time.Clock()
 
