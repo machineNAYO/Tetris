@@ -78,7 +78,7 @@ class Cursor:
         (4, ((0b11, 1, 1), (1, 0b111), (0b10, 0b10, 0b11), (0b111, 0b100) ), BLUE ),    # L
         (4, ((0b11, 0b10, 0b10), (0b111, 1), (1, 1, 0b11), (0b100, 0b111) ), PURPLE ),    # Flipped L
         (4, ((0b10, 0b11, 0b10), (0b111, 0b10), (1, 0b11, 1), (0b10, 0b111) ), YELLOW ),  # T
-        (2, ((0b11, 0b10, 1), (0b110, 0b11) ), AQUA ),  # N
+        (2, ((1, 0b11, 0b10), (0b110, 0b11) ), AQUA ),  # N
         (2, ((0b10, 0b11, 1), (0b11, 0b110) ), BROWN )   # Flipped N
         )
     
@@ -91,15 +91,24 @@ class Cursor:
         self.__type = num
         
     def GetBlock(self):
-        temB =[]
+        temB = []
+        if self.__type != 1:
+            temB = [0 for s in range (len(self.__BLOCK_TYPE[self.__type][1][self.__rotate]))]
+            i = 0
+            for b in self.__BLOCK_TYPE[self.__type][1][self.__rotate]:
+                temB[i] = b << self.__pos[0]
+                i += 1
+            return temB, self.__pos[1], self.__BLOCK_TYPE[self.__type][2]
         
-        temB = [0 for s in range (len(self.__BLOCK_TYPE[self.__type][1][self.__rotate]))]
-        i = 0
-        for b in self.__BLOCK_TYPE[self.__type][1][self.__rotate]:
-            temB[i] = b << self.__pos[0]
-            i += 1
-        return temB, self.__pos[1], self.__BLOCK_TYPE[self.__type][2]
-    
+        else:
+            temB = [0, 0]
+            i = 0
+            for b in self.__BLOCK_TYPE[1][1]:
+                temB[i] = b << self.__pos[0]
+                i += 1
+            return temB, self.__pos[1], self.__BLOCK_TYPE[1][2]
+
+
     def GetX(self):
         return self.__pos[0]
     
