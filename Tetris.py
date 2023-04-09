@@ -37,15 +37,22 @@ class StageManager:
         self.__max = self.__wall-1
     
     def CollideCheck(self, block, y, temp):     # self, blocktype, cursorpos, return True = collided
-        #print(f"{block} and {pos}")
+        if y < 0: return True
         if y > 20: return False
         i = 0
-        for b in block:          
-            if y < i: return True
-            if b & self.__stage[y - i] != 0: return True
-            if b >= self.__wall: return True
-            i += 1
+        
+        if type(block) is list:     
+            for b in block:          
+                if y < i: return True
+                if b & self.__stage[y - i] != 0: return True
+                if b >= self.__wall: return True
+                i += 1
+            return False
             
+        else:
+            if block & self.__stage[y] != 0: return True
+            if block & self.__stage[y] != 0: return True  
+            if block >= self.__wall: return True
         return False
     
     def PopLine(self):
@@ -61,10 +68,13 @@ class StageManager:
     
     def PutBlock(self, block, y, temp):
         i = 0
-        for b in block:          
-            self.__stage[y-i] |= b
-            i += 1
-            
+        if type(block) is not int:
+            for b in block:          
+                self.__stage[y-i] |= b
+                i += 1
+        
+        else:
+            self.__stage[y] |= block    
             
             
 STARTPOS = (4, 23)
@@ -84,7 +94,7 @@ class Cursor:
     
 
         self.__pos = [0, 0]
-        self.__type = 6  # str, squ, L, Lf, T, N, Nf (0~6)
+        self.__type = 0  # str, squ, L, Lf, T, N, Nf (0~6)
         self.__rotate = 0
 
     def SetType(self, num):
@@ -92,32 +102,42 @@ class Cursor:
         
     def GetBlock(self):
         temB = []
-        if self.__type != 1:
-            temB = [0 for s in range (len(self.__BLOCK_TYPE[self.__type][1][self.__rotate]))]
-            i = 0
-            for b in self.__BLOCK_TYPE[self.__type][1][self.__rotate]:
-                temB[i] = b << self.__pos[0]
-                i += 1
-            return temB, self.__pos[1], self.__BLOCK_TYPE[self.__type][2]
         
-        else:
+        if self.__type == 0 and self.__rotate == 1:
+            temB = self.__BLOCK_TYPE[0][1][1] << self.__pos[0]
+            return temB, self.__pos[1], self.__BLOCK_TYPE[0][2]
+        
+        elif self.__type == 1:
             temB = [0, 0]
             i = 0
             for b in self.__BLOCK_TYPE[1][1]:
                 temB[i] = b << self.__pos[0]
                 i += 1
             return temB, self.__pos[1], self.__BLOCK_TYPE[1][2]
-
+        
+        else:
+            temB = [0 for s in range (len(self.__BLOCK_TYPE[self.__type][1][self.__rotate]))]
+            i = 0
+            for b in self.__BLOCK_TYPE[self.__type][1][self.__rotate]:
+                temB[i] = b << self.__pos[0]
+                i += 1
+            return temB, self.__pos[1], self.__BLOCK_TYPE[self.__type][2]
 
     def GetX(self):
         return self.__pos[0]
     
+    def GetRotate(self):
+        return self.__rotate
+    
     def RotateBlock(self, dir):     # -1 = left, 1 = right
         if self.__type == 1: return
-        
+
         self.__rotate += dir
-        if(self.__rotate == -1): self.__rotate = self.__BLOCK_TYPE[self.__type][0]
+        
+        
+        if(self.__rotate == -1): self.__rotate = self.__BLOCK_TYPE[self.__type][0] - 1
         elif self.__rotate == self.__BLOCK_TYPE[self.__type][0]: self.__rotate = 0
+
         
     def MoveBlock(self, dir):   # -1 = left, 0 = down, 1 = right, 2 = up
         if dir == 0: self.__pos[1] -= 1
@@ -126,10 +146,11 @@ class Cursor:
         else: self.__pos[1] += 1
     
     def NewBlock(self):
-        #print(STARTPOS)
+        
         self.__pos = [STARTPOS[0], STARTPOS[1]]
         self.__rotate = 0
-        self.__type = 1 #random.randrange(0,7)
+        self.__type += 1 #random.randrange(0,7)
+        if self.__type == 7: self.__type = 0
 
 
 
@@ -148,20 +169,29 @@ class Canvas:
         pygame.draw.rect(self.__screen, BLACK, [STAGE_X, STAGE_Y, STAGE_WIDTH, STAGE_WIDTH*2])
         tx = 0
         ty = STAGE_Y + BLOCK_SIZE * (HEIGHT-y-1)
-        for b in block:
+        
+        if type(block) is not int:
+            for b in block:
+                
+                i = 0
+                tx = STAGE_X + BLOCK_SIZE * (WIDTH-1)
+                while b != 0:
+                    if b&1 == 1 and y < 20:
+                        pygame.draw.rect(self.__screen, color, [tx, ty, BLOCK_SIZE, BLOCK_SIZE])                   
+                    b >>= 1
+                    tx -= BLOCK_SIZE
+                    i += 1
+                ty += BLOCK_SIZE
+                y -= 1
             
-            i = 0
+        else:
             tx = STAGE_X + BLOCK_SIZE * (WIDTH-1)
-            while b != 0:
-                if b&1 == 1 and y < 20:
+            while block != 0:
+                if block&1 == 1 and y < 20:
                     pygame.draw.rect(self.__screen, color, [tx, ty, BLOCK_SIZE, BLOCK_SIZE])                   
-                b >>= 1
+                block >>= 1
                 tx -= BLOCK_SIZE
-                i += 1
-            ty += BLOCK_SIZE
-            y -= 1
-            
-
+                    
         for i in range(0, HEIGHT):
             for s in range(0, WIDTH):
                 if self.__canvas[s][i] != BLACK:
@@ -173,18 +203,26 @@ class Canvas:
     def AddBlock(self, block, ty, color):
         tx = 0
         
-        #print(ty)
-        for b in block:
-            tx = 0
-            while b != 0:
-                if b&1 == 1:
-                    
-                    #print(f"{tx} x | {ty} y")
-                    self.__canvas[tx][ty] = color                   
-                b >>= 1
-                tx += 1
-            ty -= 1
+
         
+        if type(block) is not int:
+            for b in block:
+                tx = 0
+                while b != 0:
+                    if b&1 == 1:
+                        
+                        self.__canvas[tx][ty] = color                   
+                    b >>= 1
+                    tx += 1
+                ty -= 1
+        else:
+            tx = 0
+            while block != 0:
+                if block&1 == 1:
+                        
+                    self.__canvas[tx][ty] = color                   
+                block >>= 1
+                tx += 1
     
 
 
@@ -229,20 +267,41 @@ class GameManager:
                         else: 
                             self.__csr.MoveBlock(1)
                     
-                    if event.key == pygame.K_RIGHT:
+                    elif event.key == pygame.K_RIGHT:
                         self.__csr.MoveBlock(1)
                         if self.__csr.GetX() > -1 and (not self.__stm.CollideCheck(*self.__csr.GetBlock())):
                             pass
                             
                         else: 
                             self.__csr.MoveBlock(-1)
-                    
+                            
+                            
+                    elif event.key == pygame.K_DOWN:
+                        self.__csr.RotateBlock(1)
+                        if not self.__stm.CollideCheck(*self.__csr.GetBlock()):
+                            pass
                         
-                #print(event)      
-
-            #pygame.time.delay(self.__dealy)
-            #print(time.time())
-            
+                        else:
+                            self.__csr.RotateBlock(-1)
+                            
+                    elif event.key == pygame.K_UP:
+                        self.__csr.RotateBlock(-1)
+                        if not self.__stm.CollideCheck(*self.__csr.GetBlock()):
+                            pass
+                        
+                        else:
+                            self.__csr.RotateBlock(1)
+                    
+                    elif event.key == pygame.K_SPACE:
+                        while not self.__stm.CollideCheck(*self.__csr.GetBlock()):
+                            self.__csr.MoveBlock(0)
+                        self.__csr.MoveBlock(2)
+                        self.__nva.AddBlock(*self.__csr.GetBlock())
+                        self.__stm.PutBlock(*self.__csr.GetBlock())
+                        
+                        self.__csr.NewBlock()
+                        fallcount = 0; 
+                        
             
             if fallcount == self.__fallMax: 
                 
@@ -251,16 +310,14 @@ class GameManager:
                 
                 if not self.__stm.CollideCheck(*self.__csr.GetBlock()):
                     pass
-                    #print("FALL!!")
                 else:                     
                     self.__csr.MoveBlock(2)
                     self.__nva.AddBlock(*self.__csr.GetBlock())
                     self.__stm.PutBlock(*self.__csr.GetBlock())
-                    print(f"||{self.__csr.GetX()}")
+                    
                     self.__csr.NewBlock()
                     
-                    
-                    #print("RESET!")
+    
                     
                     
             else: fallcount += 1
