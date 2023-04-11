@@ -97,6 +97,11 @@ class Cursor:
         self.__type = 0  # str, squ, L, Lf, T, N, Nf (0~6)
         self.__rotate = 0
 
+        self.__used = 0b0000000
+        self.__check = 0b1111111
+        self.__picked = False
+        self.__rand = 0
+
     def SetType(self, num):
         self.__type = num
         
@@ -147,10 +152,17 @@ class Cursor:
     
     def NewBlock(self):
         
+        if self.__used == self.__check: self.__used = 0
+        while not self.__picked:
+            self.__rand = random.randrange(0, 7)
+            if 1<<self.__rand&self.__used == 0:
+                self.__used |= 1<<self.__rand
+                self.__picked = True
+
         self.__pos = [STARTPOS[0], STARTPOS[1]]
         self.__rotate = 0
-        self.__type += 1 #random.randrange(0,7)
-        if self.__type == 7: self.__type = 0
+        self.__type = self.__rand #random.randrange(0,7)
+        self.__picked = False
 
 
 
