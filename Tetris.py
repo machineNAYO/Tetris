@@ -55,16 +55,25 @@ class StageManager:
             if block >= self.__wall: return True
         return False
     
-    def PopLine(self):
+    def PopCheck(self):
         for line in range (0, HEIGHT):
-            if self.__stage[line] == self.__max: self.__stage[line] = 0
-            
+            if self.__stage[line] == self.__max: 
+                return True
+        return False
+    
+    def PopLine(self):
+        blank = []
+        for line in range (0, HEIGHT):
+            if self.__stage[line] == self.__max: 
+                self.__stage[line] = 0
+                blank.append(line)
+
         for line in range (0, HEIGHT):
             if self.__stage[line] == 0:
                 for sline in range(line, HEIGHT):
-                    if self.__stage[sline] != 0:
                         self.__stage[line] = self.__stage[sline]
-                        break
+        return blank
+
     
     def PutBlock(self, block, y, temp):
         i = 0
@@ -236,6 +245,16 @@ class Canvas:
                 block >>= 1
                 tx += 1
     
+    def FallSet(self, blank):
+        i = 1
+        for b in blank:
+            for h in range(b,HEIGHT):
+                if h+i >= WIDTH: continue
+                for w in range(0,WIDTH-1):
+                    self.__canvas[w][h] = self.__canvas[w][h+i]
+                    self.__canvas[w][h+1] = BLACK
+            i += 1
+        
 
 
 class GameManager:
@@ -312,6 +331,8 @@ class GameManager:
                         self.__stm.PutBlock(*self.__csr.GetBlock())
                         
                         self.__csr.NewBlock()
+
+                        self.PopBlock()
                         fallcount = 0; 
                         
             
@@ -329,7 +350,7 @@ class GameManager:
                     
                     self.__csr.NewBlock()
                     
-    
+                    self.PopBlock()
                     
                     
             else: fallcount += 1
@@ -337,6 +358,9 @@ class GameManager:
             self.__nva.Rend(*self.__csr.GetBlock())   
                 
 
+    def PopBlock(self):
+        if self.__stm.PopCheck() == True:
+            self.__nva.FallSet(self.__stm.PopLine())
             
             
         
