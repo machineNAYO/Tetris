@@ -20,7 +20,7 @@ YELLOW = [255, 255, 0]
 AQUA = [0, 255, 255]
 BROWN = [150, 100, 50]
 
-TICK = 30
+TICK = 17
 SCREEN_SIZE = [800, 910]
 
 STAGE_WIDTH = 425
@@ -62,20 +62,31 @@ class StageManager:
         return False
     
     def PopLine(self):
-        blank = []
+        blank = [] # y, chain
         for line in range (0, HEIGHT):
             if self.__stage[line] == self.__max: 
                 self.__stage[line] = 0
-                blank.append(line)
+                if (line !=  0) and (self.__stage[line-1] == 0):
+                    blank[-1][1] += 1
+                else: blank.append([line,1])
 
-        for line in range (0, HEIGHT):
-            if self.__stage[line] == 0:
-                for sline in range(line, HEIGHT):
-                        self.__stage[line] = self.__stage[sline]
+        i = blank[0][1]
+        for info in blank:
+            for s in range(info[0], HEIGHT-1-i):
+                self.__stage[s] = self.__stage[s + i]
+            
+            i += blank[-1][1]    
+              
+        for s in range(HEIGHT - 1 - i + blank[-1][0], HEIGHT):
+            self.__stage[s] = 0
+                    
         return blank
 
     
     def PutBlock(self, block, y, temp):
+        isGameOver = False
+        
+        
         i = 0
         if type(block) is not int:
             for b in block:          
@@ -83,8 +94,22 @@ class StageManager:
                 i += 1
         
         else:
-            self.__stage[y] |= block    
-            
+            self.__stage[y] |= block
+        
+        self.PrintStage()
+        
+        for i in range(HEIGHT, HEIGHT + 4):
+            if self.__stage[i] != 0: isGameOver = True   
+        return isGameOver
+    
+    def PrintStage(self):
+        print("==============================================")
+        for i in range(0,HEIGHT):
+            line = str(bin(self.__stage[HEIGHT-i-1]))[2:]
+            for i in range(WIDTH-len(line)):
+                line = "0" + line
+            print(line)
+        print("==============================================")
             
 STARTPOS = (4, 23)
 
@@ -181,7 +206,7 @@ class Cursor:
 class Canvas:
     def __init__(self):
         
-        self.__canvas = [[BLACK for row in range(0,HEIGHT)] for col in range(0,WIDTH)]
+        self.__canvas = [[BLACK for col in range(0,HEIGHT)] for row in range(0,WIDTH)]
         self.__screen = pygame.display.set_mode(SCREEN_SIZE)
         self.__screen.fill(BLACK)
         pygame.draw.rect(self.__screen, WHITE, [STAGE_X - STAGE_EDGE, STAGE_Y - STAGE_EDGE, STAGE_WIDTH + STAGE_EDGE*2, (STAGE_WIDTH + STAGE_EDGE) *2], STAGE_EDGE)
@@ -245,17 +270,19 @@ class Canvas:
                 block >>= 1
                 tx += 1
     
-    def FallSet(self, blank):
-        i = 1
-        for b in blank:
-            for h in range(b,HEIGHT):
-                if h+i >= WIDTH: continue
-                for w in range(0,WIDTH-1):
-                    self.__canvas[w][h] = self.__canvas[w][h+i]
-                    self.__canvas[w][h+1] = BLACK
-            i += 1
-        
-
+    def FallSet(self, blank): 
+        i = blank[0][1]
+        for info in blank:
+            for s in range(info[0], HEIGHT-1-i):
+                for row in range(0,WIDTH):
+                    self.__canvas[row][s] = self.__canvas[row][s + i]
+                    
+            
+            i += blank[-1][1] 
+            
+        for i in range(HEIGHT - 1 - i, HEIGHT):
+                for row in range(0,WIDTH):
+                    self.__canvas[row][i] = BLACK
 
 class GameManager:
     def __init__(self):
@@ -307,33 +334,34 @@ class GameManager:
                             self.__csr.MoveBlock(-1)
                             
                             
-                    elif event.key == pygame.K_DOWN:
-                        self.__csr.RotateBlock(1)
-                        if not self.__stm.CollideCheck(*self.__csr.GetBlock()):
-                            pass
-                        
-                        else:
-                            self.__csr.RotateBlock(-1)
-                            
                     elif event.key == pygame.K_UP:
-                        self.__csr.RotateBlock(-1)
+                        self.__csr.RotateBlock(1)
                         if not self.__stm.CollideCheck(*self.__csr.GetBlock()):
                             pass 
                         
                         else:
-                            self.__csr.RotateBlock(1)
+                            self.__csr.RotateBlock(-1)
+                                                                  
                     
                     elif event.key == pygame.K_SPACE:
                         while not self.__stm.CollideCheck(*self.__csr.GetBlock()):
                             self.__csr.MoveBlock(0)
                         self.__csr.MoveBlock(2)
-                        self.__nva.AddBlock(*self.__csr.GetBlock())
-                        self.__stm.PutBlock(*self.__csr.GetBlock())
+                        
+                        if self.__stm.PutBlock(*self.__csr.GetBlock()):
+                            print("GAMEOVER")
+                            return 
+                        self.__nva.AddBlock(*self.__csr.GetBlock())    
                         
                         self.__csr.NewBlock()
 
                         self.PopBlock()
                         fallcount = 0; 
+                
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_DOWN]: fallcount = self.__fallMax
+                    
+                        
                         
             
             if fallcount == self.__fallMax: 
@@ -345,8 +373,11 @@ class GameManager:
                     pass
                 else:                     
                     self.__csr.MoveBlock(2)
+                    
+                    if self.__stm.PutBlock(*self.__csr.GetBlock()) == True:
+                        print("GAMEOVER")
+                        return  
                     self.__nva.AddBlock(*self.__csr.GetBlock())
-                    self.__stm.PutBlock(*self.__csr.GetBlock())
                     
                     self.__csr.NewBlock()
                     
@@ -361,10 +392,9 @@ class GameManager:
     def PopBlock(self):
         if self.__stm.PopCheck() == True:
             self.__nva.FallSet(self.__stm.PopLine())
+            #self.__stm.PrintStage()
             
-            
-        
-        
+
         
 gameManager = GameManager()        
 gameManager.Start()
