@@ -5,4 +5,4 @@ yes tetris
 
 asdf
 
-*not completed*
+*COmpleted.*
